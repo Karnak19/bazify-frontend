@@ -1,10 +1,10 @@
 <template>
-  <div class="p-grid p-flex-column p-jc-between">
+  <div class="p-grid p-jc-between">
     <form class="p-col-12 p-offset-0 p-md-6 p-md-offset-3">
-      <!-- <input type="file" v-model="song" /> -->
       <FileUpload
-        name="file"
-        url="https://api-bazify.basile.vernouillet.dev/songs"
+        name="files"
+        :url="`${API_URL}/songs`"
+        :multiple="true"
         @upload="onUpload"
       >
         <template #empty>
@@ -12,30 +12,53 @@
         </template>
       </FileUpload>
     </form>
+    <figure v-for="song in songs" :key="song.id">
+      <figcaption>
+        {{ song.title }}
+      </figcaption>
+      <audio controls preload="none">
+        <source :src="song.url" type="audio/mpeg" />
+      </audio>
+    </figure>
   </div>
 </template>
 
 <script>
-import { ref } from "vue";
-// @ is an alias to /src
+import { onMounted, ref } from "vue";
 import FileUpload from "primevue/fileupload";
+
+import { API_URL } from "../api";
+
 export default {
   name: "Home",
   components: {
     FileUpload
   },
   setup: () => {
-    const song = ref();
-    const form = new FormData();
-    form.append("file", song);
+    const songs = ref([]);
 
-    const onUpload = () => {
-      console.log("uploaded !");
+    const fetchSongs = async () => {
+      const res = await fetch(API_URL + "/songs");
+      const json = await res.json();
+
+      songs.value = json.map(s => {
+        return {
+          ...s,
+          url: API_URL + s.url
+        };
+      });
     };
 
+    const onUpload = async () => {
+      await fetchSongs();
+    };
+
+    onMounted(fetchSongs);
+
     return {
-      song,
-      onUpload
+      songs,
+      onUpload,
+      API_URL
     };
   }
 };
